@@ -1,7 +1,24 @@
 from typing import List, Optional
+from datetime import date
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models import Category, Transaction
+
+
+def _build_date_range(year: Optional[int], month: Optional[int]):
+    """将 year/month 转为 [start, end) 日期范围，让查询可用上 date 列索引"""
+    if not year:
+        return None, None
+    if month:
+        start = date(year, month, 1)
+        if month == 12:
+            end = date(year + 1, 1, 1)
+        else:
+            end = date(year, month + 1, 1)
+    else:
+        start = date(year, 1, 1)
+        end = date(year + 1, 1, 1)
+    return start, end
 
 
 def get_transactions(
@@ -10,6 +27,9 @@ def get_transactions(
     category_id: Optional[int] = None,
     year: Optional[int] = None,
     month: Optional[int] = None,
+    keyword: Optional[str] = None,
+    amount_min: Optional[float] = None,
+    amount_max: Optional[float] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> List[Transaction]:
@@ -18,10 +38,15 @@ def get_transactions(
         query = query.filter(Transaction.type == type_filter)
     if category_id:
         query = query.filter(Transaction.category_id == category_id)
-    if year:
-        query = query.filter(func.year(Transaction.date) == year)
-    if month:
-        query = query.filter(func.month(Transaction.date) == month)
+    start, end = _build_date_range(year, month)
+    if start:
+        query = query.filter(Transaction.date >= start, Transaction.date < end)
+    if keyword:
+        query = query.filter(Transaction.description.ilike(f"%{keyword}%"))
+    if amount_min is not None:
+        query = query.filter(Transaction.amount >= amount_min)
+    if amount_max is not None:
+        query = query.filter(Transaction.amount <= amount_max)
     return query.order_by(Transaction.date.desc(), Transaction.created_at.desc()).offset(skip).limit(limit).all()
 
 
@@ -38,8 +63,7 @@ def update_transaction(db: Session, txn_id: int, data: dict) -> Optional[Transac
     if not txn:
         return None
     for key, value in data.items():
-        if value is not None:
-            setattr(txn, key, value)
+        setattr(txn, key, value)
     db.commit()
     db.refresh(txn)
     return txn
@@ -55,15 +79,15 @@ def delete_transaction(db: Session, txn_id: int) -> bool:
 
 
 def get_stats(db: Session, year: Optional[int] = None, month: Optional[int] = None) -> dict:
+    start, end = _build_date_range(year, month)
+
     query = db.query(
         Transaction.type,
         func.sum(Transaction.amount).label("total"),
         func.count(Transaction.id).label("count"),
     )
-    if year:
-        query = query.filter(func.year(Transaction.date) == year)
-    if month:
-        query = query.filter(func.month(Transaction.date) == month)
+    if start:
+        query = query.filter(Transaction.date >= start, Transaction.date < end)
     query = query.group_by(Transaction.type)
     result = {"income": {"total": 0, "count": 0}, "expense": {"total": 0, "count": 0}}
     for row in query.all():
@@ -78,10 +102,8 @@ def get_stats(db: Session, year: Optional[int] = None, month: Optional[int] = No
         Category.icon,
         Category.color,
     ).join(Category, Transaction.category_id == Category.id)
-    if year:
-        cat_query = cat_query.filter(func.year(Transaction.date) == year)
-    if month:
-        cat_query = cat_query.filter(func.month(Transaction.date) == month)
+    if start:
+        cat_query = cat_query.filter(Transaction.date >= start, Transaction.date < end)
     cat_query = cat_query.group_by(Transaction.category_id, Transaction.type, Category.name, Category.icon, Category.color)
     result["by_category"] = [
         {

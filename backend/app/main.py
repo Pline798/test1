@@ -1,14 +1,22 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.routers import categories, transactions, stats
+from app.init_db import init_seed_categories
 
 import os
 
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="个人记账本 API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    init_seed_categories()
+    yield
+
+
+app = FastAPI(title="个人记账本 API", version="1.0.0", lifespan=lifespan)
 
 # 挂载项目文档目录（供前端页面在线浏览 Markdown 文档）
 _docs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "docs")
@@ -17,7 +25,7 @@ if os.path.isdir(_docs_dir):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

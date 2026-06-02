@@ -13,11 +13,14 @@ def list_transactions(
     category_id: Optional[int] = None,
     year: Optional[int] = None,
     month: Optional[int] = None,
+    keyword: Optional[str] = Query(None),
+    amount_min: Optional[float] = Query(None, ge=0),
+    amount_max: Optional[float] = Query(None, ge=0),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
-    return get_transactions(db, type, category_id, year, month, skip, limit)
+    return get_transactions(db, type, category_id, year, month, keyword, amount_min, amount_max, skip, limit)
 
 @router.post("", response_model=TransactionOut, response_model_by_alias=True)
 def add_transaction(data: TransactionCreate, db: Session = Depends(get_db)):

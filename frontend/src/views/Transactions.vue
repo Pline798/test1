@@ -4,8 +4,8 @@ import { useTransactions } from '../composables/useTransactions'
 import TransactionForm from '../components/TransactionForm.vue'
 
 const {
-  transactions, categories, showForm, editingId, filterType, form,
-  filteredTxns, typeCats,
+  transactions, categories, showForm, editingId, filterType, form, loading,
+  filteredTxns, typeCats, searchKeyword, amountMin, amountMax, clearSearch,
   loadData, loadTransactions, openAdd, openEdit, closeForm, submit, remove,
 } = useTransactions()
 
@@ -15,6 +15,37 @@ onMounted(loadData)
 <template>
   <div class="transactions">
     <div class="toolbar">
+      <div class="search-row">
+        <div class="search-bar">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            class="search-input"
+            placeholder="搜索备注..."
+          />
+          <button v-if="searchKeyword || amountMin || amountMax" class="search-clear" @click="clearSearch">✕</button>
+        </div>
+      </div>
+      <div class="amount-filter">
+        <span class="amount-label">金额</span>
+        <input
+          v-model="amountMin"
+          type="number"
+          class="amount-input"
+          placeholder="最小值"
+          min="0"
+          step="0.01"
+        />
+        <span class="amount-sep">—</span>
+        <input
+          v-model="amountMax"
+          type="number"
+          class="amount-input"
+          placeholder="最大值"
+          min="0"
+          step="0.01"
+        />
+      </div>
       <div class="filter-tabs">
         <button :class="['filter-btn', { active: filterType === '' }]" @click="filterType = ''">全部</button>
         <button :class="['filter-btn', { active: filterType === 'expense' }]" @click="filterType = 'expense'">支出</button>
@@ -65,6 +96,17 @@ onMounted(loadData)
 <style scoped>
 .transactions { display: flex; flex-direction: column; gap: 12px; }
 .toolbar { display: flex; flex-direction: column; gap: 10px; }
+.search-row { display: flex; gap: 8px; }
+.search-bar { display: flex; gap: 8px; flex: 1; }
+.search-input { flex: 1; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; outline: none; }
+.search-input:focus { border-color: #667eea; }
+.search-clear { padding: 6px 10px; border: 1px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; color: #999; font-size: 12px; line-height: 1; }
+.search-clear:hover { background: #f5f5f5; }
+.amount-filter { display: flex; align-items: center; gap: 6px; }
+.amount-label { font-size: 13px; color: #666; white-space: nowrap; }
+.amount-input { width: 90px; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; outline: none; }
+.amount-input:focus { border-color: #667eea; }
+.amount-sep { color: #999; font-size: 13px; }
 .filter-tabs { display: flex; gap: 8px; }
 .filter-btn { flex: 1; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px; background: white; font-size: 13px; cursor: pointer; color: #666; }
 .filter-btn.active { background: #667eea; color: white; border-color: #667eea; }

@@ -7,6 +7,7 @@ const stats = ref(null)
 const recentTransactions = ref([])
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
+const loading = ref(false)
 
 const balance = computed(() => {
   if (!stats.value) return 0
@@ -14,30 +15,39 @@ const balance = computed(() => {
 })
 
 async function loadData() {
-  const [s, txns] = await Promise.all([
-    fetchStats({ year: currentYear.value, month: currentMonth.value }),
-    fetchTransactions({ year: currentYear.value, month: currentMonth.value, limit: 5 }),
-  ])
-  stats.value = s
-  recentTransactions.value = txns
+  loading.value = true
+  try {
+    const [s, txns] = await Promise.all([
+      fetchStats({ year: currentYear.value, month: currentMonth.value }),
+      fetchTransactions({ year: currentYear.value, month: currentMonth.value, limit: 5 }),
+    ])
+    stats.value = s
+    recentTransactions.value = txns
+  } catch (e) {
+    // 错误由拦截器处理
+  } finally {
+    loading.value = false
+  }
 }
 
-function prevMonth() {
+async function prevMonth() {
   if (currentMonth.value === 1) {
     currentMonth.value = 12
     currentYear.value--
   } else {
     currentMonth.value--
   }
+  await loadData()
 }
 
-function nextMonth() {
+async function nextMonth() {
   if (currentMonth.value === 12) {
     currentMonth.value = 1
     currentYear.value++
   } else {
     currentMonth.value++
   }
+  await loadData()
 }
 
 onMounted(loadData)
@@ -60,7 +70,8 @@ onMounted(loadData)
 
     <div class="section">
       <h3 class="section-title">📈 本月分类统计</h3>
-      <div class="category-stats">
+      <div v-if="loading" class="empty">加载中...</div>
+      <div v-else class="category-stats">
         <div v-for="cat in (stats?.by_category || [])" :key="cat.category_id" class="cat-row">
           <span class="cat-icon" :style="{ background: cat.color + '20' }">{{ cat.icon }}</span>
           <span class="cat-name">{{ cat.category_name }}</span>

@@ -1,4 +1,5 @@
 from typing import List, Optional
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from app.models import Category
 
@@ -23,8 +24,7 @@ def update_category(db: Session, cat_id: int, data: dict) -> Optional[Category]:
     if not cat:
         return None
     for key, value in data.items():
-        if value is not None:
-            setattr(cat, key, value)
+        setattr(cat, key, value)
     db.commit()
     db.refresh(cat)
     return cat
@@ -34,6 +34,10 @@ def delete_category(db: Session, cat_id: int) -> bool:
     cat = db.query(Category).filter(Category.id == cat_id).first()
     if not cat:
         return False
-    db.delete(cat)
-    db.commit()
-    return True
+    try:
+        db.delete(cat)
+        db.commit()
+        return True
+    except exc.IntegrityError:
+        db.rollback()
+        raise ValueError("该分类下有流水记录，无法删除")

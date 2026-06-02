@@ -21,7 +21,24 @@ DEFAULT_CATEGORIES = [
     {"name": "其他支出", "type": "expense", "icon": "📦", "color": "#95A5A6"},
 ]
 
+
+def init_seed_categories():
+    """供 main.py lifespan 调用的种子数据函数，跳过已有数据的场景"""
+    db = SessionLocal()
+    try:
+        existing = db.query(Category).count()
+        if existing > 0:
+            return
+        for item in DEFAULT_CATEGORIES:
+            db.add(Category(**item))
+        db.commit()
+        print(f"✅ 成功插入 {len(DEFAULT_CATEGORIES)} 条默认分类")
+    finally:
+        db.close()
+
+
 def init():
+    """独立运行时的完整初始化（含创建表）"""
     db = SessionLocal()
     try:
         existing = db.query(Category).count()
@@ -34,6 +51,7 @@ def init():
         print(f"✅ 成功插入 {len(DEFAULT_CATEGORIES)} 条默认分类")
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     init()

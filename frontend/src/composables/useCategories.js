@@ -26,10 +26,14 @@ export function useCategories() {
   ]
 
   async function loadAll() {
-    const cats = await fetchCategories()
-    const income = cats.filter(c => c.type === 'income')
-    const expense = cats.filter(c => c.type === 'expense')
-    categories.value = { income, expense }
+    try {
+      const cats = await fetchCategories()
+      const income = cats.filter(c => c.type === 'income')
+      const expense = cats.filter(c => c.type === 'expense')
+      categories.value = { income, expense }
+    } catch (e) {
+      // 错误由拦截器处理
+    }
   }
 
   function openAdd(type) {
@@ -50,19 +54,27 @@ export function useCategories() {
   }
 
   async function submit() {
-    if (editingId.value) {
-      await updateCategory(editingId.value, form.value)
-    } else {
-      await createCategory(form.value)
+    try {
+      if (editingId.value) {
+        await updateCategory(editingId.value, form.value)
+      } else {
+        await createCategory(form.value)
+      }
+      closeForm()
+      await loadAll()
+    } catch (e) {
+      // 错误由拦截器处理
     }
-    closeForm()
-    await loadAll()
   }
 
   async function remove(id) {
     if (!confirm('删除分类会同时删除该分类下的所有流水记录，确定吗？')) return
-    await deleteCategory(id)
-    await loadAll()
+    try {
+      await deleteCategory(id)
+      await loadAll()
+    } catch (e) {
+      // 错误由拦截器处理
+    }
   }
 
   return {

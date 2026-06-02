@@ -24,7 +24,10 @@ def edit_category(cat_id: int, data: CategoryUpdate, db: Session = Depends(get_d
 
 @router.delete("/{cat_id}")
 def remove_category(cat_id: int, db: Session = Depends(get_db)):
-    success = delete_category(db, cat_id)
+    try:
+        success = delete_category(db, cat_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     if not success:
         raise HTTPException(404, "分类不存在")
     return {"message": "删除成功"}

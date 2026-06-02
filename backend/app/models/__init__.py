@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Enum, Date, DateTime, ForeignKey, Text
+    Column, Integer, String, Numeric, Enum, Date, DateTime, ForeignKey, Text
 )
 from sqlalchemy.orm import relationship
 
@@ -24,11 +24,11 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    amount = Column(Float, nullable=False, comment="金额")
+    amount = Column(Numeric(10, 2), nullable=False, comment="金额")
     type = Column(Enum("income", "expense", name="transaction_type"), nullable=False, comment="收支类型")
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, comment="分类ID")
+    category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False, comment="分类ID")
     description = Column(Text, comment="备注")
     date = Column(Date, nullable=False, comment="交易日期")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), comment="创建时间")
 
     category = relationship("Category", back_populates="transactions")

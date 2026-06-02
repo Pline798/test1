@@ -26,3 +26,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Test
+test_account_book.db

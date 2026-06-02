@@ -3,6 +3,17 @@ import dayjs from 'dayjs'
 
 const http = axios.create({ baseURL: '/api' })
 
+// 全局错误处理
+http.interceptors.response.use(
+  res => res,
+  error => {
+    const msg = error.response?.data?.detail || error.message || '网络请求失败'
+    console.error('[API Error]', msg)
+    alert('操作失败：' + msg)
+    return Promise.reject(error)
+  },
+)
+
 export async function fetchCategories(type) {
   const params = type ? { type } : {}
   const res = await http.get('/categories', { params })

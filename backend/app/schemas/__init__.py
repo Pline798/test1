@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class CategoryBase(BaseModel):
-    name: str = Field(..., max_length=50, description="分类名称")
+    name: str = Field(..., min_length=1, max_length=50, description="分类名称")
     record_type: str = Field(..., alias="type", pattern="^(income|expense)$", description="分类类型")
     icon: str = Field("📁", max_length=20, description="图标")
     color: str = Field("#409EFF", max_length=7, description="颜色")
